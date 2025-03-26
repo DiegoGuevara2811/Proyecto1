@@ -100,44 +100,39 @@ public class Evaluator {
     private Object evalAtom(Object expr) {
         if (expr instanceof List) {
             List<Object> list = (List<Object>) expr;
+            //System.out.println("ESTA ES LA EXPRESION ---- "+expr);
             if (list.isEmpty()) {
-                return Collections.emptyList();  // () → lista vacía
+                return Collections.emptyList();
             }
-            // Si es una lista no vacía, evalúa su contenido
+            // ¡Forzar evaluación recursiva!
             return evaluate(list);
         }
 
         if (expr instanceof String) {
             String str = (String) expr;
-
-            // Manejo de strings literales
             if (str.startsWith("\"") && str.endsWith("\"")) {
                 return str.substring(1, str.length() - 1);
             }
-
-            // Valores especiales
             if (str.equalsIgnoreCase("t")) return true;
             if (str.equalsIgnoreCase("nil")) return false;
 
-            // Números
             try {
                 return Integer.parseInt(str);
             } catch (NumberFormatException e1) {
                 try {
                     return Double.parseDouble(str);
                 } catch (NumberFormatException e2) {
-                    // Símbolos/variables
                     if (env.variableExists(str)) {
                         return env.getVariable(str);
                     }
-                    return str;  // Devuelve el símbolo como String
+                    return str;
                 }
             }
         }
 
-        // Si no es String ni List, devolver el objeto tal cual (números, booleanos, etc.)
-        return expr;
+        return expr;  // Si no es lista ni string, devolver tal cual (números, booleanos)
     }
+
 
     private Object evalPrint(List<Object> expression) {
         if (expression.size() < 2) throw new RuntimeException("print requiere al menos un argumento");
@@ -180,18 +175,43 @@ public class Evaluator {
         if (expression.size() < 2) throw new RuntimeException("Operación requiere al menos un argumento");
         double result = initial;
         boolean allIntegers = true;
-        for (int i = 1; i < expression.size(); i++) {
-            Object evaluated = evalAtom(expression.get(i));
-            if (!(evaluated instanceof Number)) throw new RuntimeException("Argumento no numérico: " + evaluated);
-            Number num = (Number) evaluated;
-            double currentValue = num.doubleValue();
-            if (allIntegers && !isInteger(num)) allIntegers = false;
-            if (i == 1 && expression.size() == 2) result = currentValue;
-            else result = op.apply(result, currentValue);
-        }
-        return allIntegers && result == (int)result ? (int)result : result;
 
+        // Iterar sobre la lista de expresiones (empezando desde el segundo elemento)
+        for (int i = 1; i < expression.size(); i++) {
+
+                // Evaluar la subexpresión
+                Object evaluated = evalAtom(expression.get(i));
+                //System.out.println(evaluated + " " + result);
+                // Verificar que sea un número
+                if (!(evaluated instanceof Number)) {
+                    throw new RuntimeException("Argumento no numérico: " + evaluated);
+                }
+
+                // Convertir el valor a tipo double
+                Number num = (Number) evaluated;
+                double currentValue = num.doubleValue();
+            //System.out.println("currentValue: " + currentValue);
+
+                // Comprobar si todos los números son enteros
+                if (allIntegers && !isInteger(num)) allIntegers = false;
+                // Si es el primer valor, asignar directamente
+                if(i == 1){
+                    result = currentValue;
+                }
+                else if (i == 1 && expression.size() == 2) {
+                    result = currentValue;
+                    //System.out.println("RESULTADO: " + result);
+                } else {
+                    result = op.apply(result, currentValue); // Aplicar la operación (suma, multiplicación, etc.)
+                    //System.out.println("RESULTADO: " + result);
+                }
+        }
+
+        // Si todos los valores son enteros, devuelve un entero; de lo contrario, devuelve un número decimal
+        return allIntegers && result == (int) result ? (int) result : result;
     }
+
+
 
 
     private Number evalDivision(List<Object> expression) {

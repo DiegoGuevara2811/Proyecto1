@@ -29,8 +29,12 @@ public class Parser {
 
         List<Object> expression = new ArrayList<>();
         while (position < tokens.size() && !peekToken().equals(")")) {
-            if (peekToken().equals("(")) expression.add(parseExpression());
-            else expression.add(parseAtom());
+            token = peekToken();
+            if (token.equals("(")) {
+                expression.add(parseExpression());
+            } else {
+                expression.add(parseAtom());
+            }
         }
 
         if (position >= tokens.size()) throw new RuntimeException("Expresión no terminada, falta ')'");
@@ -40,7 +44,7 @@ public class Parser {
 
     private Object parseAtom() {
         String token = consumeToken("Se esperaba un átomo");
-
+        //System.out.println(token);
         if (token.startsWith("\"") && token.endsWith("\"")) {
             return token.substring(1, token.length() - 1);
         }
