@@ -1,7 +1,6 @@
 package Proyecto;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class Parser {
     private final List<String> tokens;
@@ -13,46 +12,41 @@ public class Parser {
     }
 
     public List<Object> parse() {
-        if (tokens.isEmpty()) {
-            throw new RuntimeException("No hay tokens para parsear");
-        }
-
-        List<Object> parsed = parseExpression();
-
-        if (position < tokens.size()) {
-            throw new RuntimeException("Tokens adicionales no esperados: " + tokens.subList(position, tokens.size()));
-        }
-
+        if (tokens.isEmpty()) throw new RuntimeException("No hay expresiones para evaluar");
+        List<Object> parsed = new ArrayList<>();
+        while (position < tokens.size()) parsed.add(parseExpression());
         return parsed;
     }
 
     private List<Object> parseExpression() {
-        String token = consumeToken();
+        if (position >= tokens.size()) throw new RuntimeException("Se esperaba una expresión");
+        String token = consumeToken("Se esperaba una expresión");
 
         if (!token.equals("(")) {
-            throw new RuntimeException("Se esperaba '(' al inicio de expresión");
+            position--;
+            return Collections.singletonList(parseAtom());
         }
 
         List<Object> expression = new ArrayList<>();
-
         while (position < tokens.size() && !peekToken().equals(")")) {
-            if (peekToken().equals("(")) {
-                expression.add(parseExpression());
-            } else {
-                expression.add(parseAtom());
-            }
+            if (peekToken().equals("(")) expression.add(parseExpression());
+            else expression.add(parseAtom());
         }
 
-        if (position >= tokens.size()) {
-            throw new RuntimeException("Se esperaba ')' al final de expresión");
-        }
-
-        consumeToken(); // Consume the closing ')'
+        if (position >= tokens.size()) throw new RuntimeException("Expresión no terminada, falta ')'");
+        consumeToken("Se esperaba ')' para cerrar la expresión");
         return expression;
     }
 
     private Object parseAtom() {
-        String token = consumeToken();
+        String token = consumeToken("Se esperaba un átomo");
+
+        if (token.startsWith("\"") && token.endsWith("\"")) {
+            return token.substring(1, token.length() - 1);
+        }
+
+        if (token.equalsIgnoreCase("t")) return true;
+        if (token.equalsIgnoreCase("nil")) return false;
 
         try {
             return Integer.parseInt(token);
@@ -60,26 +54,17 @@ public class Parser {
             try {
                 return Double.parseDouble(token);
             } catch (NumberFormatException e2) {
-                if (token.startsWith("\"") && token.endsWith("\"")) {
-                    return token.substring(1, token.length() - 1);
-                }
                 return token;
             }
         }
     }
 
-    private String consumeToken() {
-        if (position >= tokens.size()) {
-            throw new RuntimeException("Se esperaban más tokens");
-        }
+    private String consumeToken(String errorMessage) {
+        if (position >= tokens.size()) throw new RuntimeException(errorMessage);
         return tokens.get(position++);
     }
 
     private String peekToken() {
-        if (position >= tokens.size()) {
-            throw new RuntimeException("Se esperaban más tokens");
-        }
-        return tokens.get(position);
+        return position >= tokens.size() ? ")" : tokens.get(position);
     }
 }
-

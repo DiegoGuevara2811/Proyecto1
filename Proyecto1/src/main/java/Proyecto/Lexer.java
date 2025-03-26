@@ -19,7 +19,7 @@ public class Lexer {
         while (position < input.length()) {
             char current = input.charAt(position);
 
-            if (current == '(' || current == ')') {
+            if (current == '(' || current == ')' || current == '\'') {
                 tokens.add(String.valueOf(current));
                 position++;
             } else if (current == '"') {
@@ -29,52 +29,58 @@ public class Lexer {
             } else {
                 tokens.add(readSymbol());
             }
-
             skipWhitespace();
         }
-
         return tokens;
     }
 
     private String readString() {
-        position++; // Skip opening quote
         StringBuilder sb = new StringBuilder();
         sb.append('"');
+        position++;
 
         while (position < input.length() && input.charAt(position) != '"') {
             sb.append(input.charAt(position));
             position++;
         }
 
-        if (position >= input.length()) {
-            throw new RuntimeException("String no terminada");
-        }
-
+        if (position >= input.length()) throw new RuntimeException("String no terminada");
         sb.append('"');
-        position++; // Skip closing quote
+        position++;
         return sb.toString();
     }
 
     private String readNumber() {
         StringBuilder sb = new StringBuilder();
+        boolean hasDecimal = false;
+
         if (input.charAt(position) == '-') {
             sb.append('-');
             position++;
         }
 
-        while (position < input.length() && Character.isDigit(input.charAt(position))) {
-            sb.append(input.charAt(position));
-            position++;
+        while (position < input.length()) {
+            char c = input.charAt(position);
+            if (Character.isDigit(c)) {
+                sb.append(c);
+                position++;
+            } else if (c == '.' && !hasDecimal) {
+                hasDecimal = true;
+                sb.append(c);
+                position++;
+            } else {
+                break;
+            }
         }
-
         return sb.toString();
     }
 
     private String readSymbol() {
         StringBuilder sb = new StringBuilder();
-        while (position < input.length() && !Character.isWhitespace(input.charAt(position)) &&
-                input.charAt(position) != '(' && input.charAt(position) != ')') {
-            sb.append(input.charAt(position));
+        while (position < input.length()) {
+            char c = input.charAt(position);
+            if (Character.isWhitespace(c) || c == '(' || c == ')') break;
+            sb.append(c);
             position++;
         }
         return sb.toString();

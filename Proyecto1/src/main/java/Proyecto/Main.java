@@ -1,38 +1,36 @@
 package Proyecto;
 
-import java.util.Scanner;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 public class Main {
     public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
-        Interpreter interpreter = new Interpreter();
-
-        System.out.println("Intérprete Lisp en Java. Escribe 'exit' para salir.");
-
-        while (true) {
-            System.out.print("Lisp> ");
-            String input = scanner.nextLine().trim();
-
-            if (input.equalsIgnoreCase("exit")) {
-                break;
+        try {
+            // Leer el archivo desde resources
+            InputStream inputStream = Main.class.getClassLoader().getResourceAsStream("codigo.lisp");
+            if (inputStream == null) {
+                System.err.println("Error: No se encontró codigo.lisp en resources");
+                System.exit(1);
             }
 
-            if (input.isEmpty()) {
-                continue;
-            }
+            String content = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+            inputStream.close();
 
-            try {
-                Object result = interpreter.interpret(input);
-                // Solo imprimir si el resultado no es null y no es una llamada a print
-                if (result != null && !input.trim().startsWith("(print")) {
-                    System.out.println(result.toString());
-                }
-            } catch (Exception e) {
-                System.err.println("Error: " + e.getMessage());
+            // Interpretar el contenido
+            Interpreter interpreter = new Interpreter();
+            Object result = interpreter.interpret(content);
+
+            // Mostrar resultado
+            if (result != null) {
+                System.out.println("Resultado de codigo.lisp: " + result);
             }
+        } catch (IOException e) {
+            System.err.println("Error al leer el archivo: " + e.getMessage());
+            System.exit(1);
+        } catch (Exception e) {
+            System.err.println("Error al interpretar: " + e.getMessage());
+            System.exit(1);
         }
-
-        scanner.close();
-        System.out.println("Saliendo del intérprete Lisp.");
     }
 }

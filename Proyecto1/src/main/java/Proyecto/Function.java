@@ -4,28 +4,45 @@ import java.util.List;
 
 public class Function {
     private final String name;
-    private final List<String> parameters;
+    private final List<String> params;
     private final List<Object> body;
 
-    public Function(String name, List<String> parameters, List<Object> body) {
+    public Function(String name, List<String> params, List<Object> body) {
         this.name = name;
-        this.parameters = parameters;
+        this.params = params;
         this.body = body;
     }
 
-    public Object call(List<Object> arguments, Environment outerEnv) {
-        if (arguments.size() != parameters.size()) {
-            throw new RuntimeException("Número incorrecto de argumentos para " + name +
-                    ". Esperados: " + parameters.size() + ", recibidos: " + arguments.size());
+    public String getName() {
+        return name;
+    }
+
+    public List<String> getParams() {
+        return params;
+    }
+
+    public List<Object> getBody() {
+        return body;
+    }
+
+    public Object call(List<Object> args, Environment env) {
+        Environment localEnv = new Environment(env.getGlobal());
+
+        if (args.size() != params.size()) {
+            throw new RuntimeException("Número incorrecto de argumentos para " + name);
         }
 
-        Environment localEnv = new Environment(outerEnv);
-
-        for (int i = 0; i < parameters.size(); i++) {
-            localEnv.setVariable(parameters.get(i), arguments.get(i));
+        for (int i = 0; i < params.size(); i++) {
+            localEnv.setVariable(params.get(i), args.get(i));
         }
 
         Evaluator evaluator = new Evaluator(localEnv);
-        return evaluator.evaluate(body);
+        Object result = null;
+
+        for (Object expr : body) {
+            result = evaluator.evaluate((List<Object>) expr);
+        }
+
+        return result;
     }
 }
